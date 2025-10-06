@@ -1,142 +1,268 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { MapPin, Plus, CheckCircle, AlertCircle } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useLandRecords } from "@/hooks/useLandRecords";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Plus, Calendar, AlertCircle } from "lucide-react";
 
-const Dashboard = () => {
-  const { records } = useLandRecords();
-  
-  const totalRecords = records.length;
-  const verifiedRecords = records.filter(r => r.verified).length;
-  const totalArea = records.reduce((sum, r) => sum + parseFloat(r.area || "0"), 0).toFixed(1);
+interface LandRecord {
+  id: string;
+  surveyNumber: string;
+  area: string;
+  location: string;
+  ownerName: string;
+  ownerAadhar: string;
+  ownerPhone: string;
+  district: string;
+  state: string;
+  pincode: string;
+  witnesses: Array<{
+    name: string;
+    aadhar: string;
+    phone: string;
+  }>;
+  registeredDate: string;
+  status: string;
+  verified: boolean;
+}
+
+export default function Dashboard() {
+  const navigate = useNavigate();
+  const [landRecords, setLandRecords] = useState<LandRecord[]>([]);
+
+  // Load land records from localStorage on component mount
+  useEffect(() => {
+    loadLandRecords();
+  }, []);
+
+  const loadLandRecords = () => {
+    const records = localStorage.getItem("landRecords");
+    if (records) {
+      const parsedRecords = JSON.parse(records);
+      setLandRecords(parsedRecords);
+    }
+  };
+
+  // Refresh data every time the component becomes visible
+  useEffect(() => {
+    const handleFocus = () => {
+      loadLandRecords();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, []);
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "verified":
+        return "bg-green-500";
+      case "pending":
+        return "bg-yellow-500";
+      case "rejected":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-12 px-4">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-12">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-foreground mb-2">Land Dashboard</h1>
-            <p className="text-lg text-muted-foreground">Manage and view all your land records</p>
+            <h1 className="text-4xl font-bold text-foreground mb-2">
+              My Land Records
+            </h1>
+            <p className="text-muted-foreground">
+              Manage and track your registered land properties
+            </p>
           </div>
-          <Link to="/add-land">
-            <Button size="lg" className="mt-4 md:mt-0 h-12 px-6 rounded-xl shadow-medium">
-              <Plus className="w-5 h-5 mr-2" />
-              Add New Land
-            </Button>
-          </Link>
+          <Button
+            size="lg"
+            onClick={() => navigate("/add-land")}
+            className="gap-2"
+          >
+            <Plus className="h-5 w-5" />
+            Add New Land
+          </Button>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
-          <Card className="rounded-2xl shadow-soft">
-            <CardHeader>
-              <CardTitle className="text-muted-foreground text-sm font-medium">Total Land Records</CardTitle>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>Total Properties</CardDescription>
+              <CardTitle className="text-3xl">{landRecords.length}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-4xl font-bold text-foreground">{totalRecords}</p>
-            </CardContent>
           </Card>
-          
-          <Card className="rounded-2xl shadow-soft">
-            <CardHeader>
-              <CardTitle className="text-muted-foreground text-sm font-medium">Verified Records</CardTitle>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>Verified</CardDescription>
+              <CardTitle className="text-3xl text-green-600">
+                {landRecords.filter((r) => r.verified).length}
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-4xl font-bold text-primary">{verifiedRecords}</p>
-            </CardContent>
           </Card>
-          
-          <Card className="rounded-2xl shadow-soft">
-            <CardHeader>
-              <CardTitle className="text-muted-foreground text-sm font-medium">Total Area</CardTitle>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>Pending</CardDescription>
+              <CardTitle className="text-3xl text-yellow-600">
+                {landRecords.filter((r) => !r.verified).length}
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-4xl font-bold text-secondary">{totalArea} acres</p>
-            </CardContent>
           </Card>
         </div>
 
-        {/* Land Records */}
-        <div className="space-y-6">
-          <h2 className="text-2xl font-semibold text-foreground">Your Land Records</h2>
-          
-          {records.map((record) => (
-            <Card key={record.id} className="rounded-2xl shadow-soft hover:shadow-medium transition-all">
-              <CardContent className="p-8">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                  <div className="flex-1 space-y-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-2xl font-semibold text-foreground mb-1">{record.ownerName}</h3>
-                        <p className="text-muted-foreground">Survey No: {record.surveyNumber}</p>
+        {/* Land Records List */}
+        {landRecords.length === 0 ? (
+          <Card className="text-center py-12">
+            <CardContent>
+              <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">
+                No Land Records Found
+              </h3>
+              <p className="text-muted-foreground mb-6">
+                You haven't registered any land yet. Click the button below to
+                add your first property.
+              </p>
+              <Button
+                size="lg"
+                onClick={() => navigate("/add-land")}
+                className="gap-2"
+              >
+                <Plus className="h-5 w-5" />
+                Register Your First Land
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 gap-6">
+            {landRecords.map((record) => (
+              <Card
+                key={record.id}
+                className="shadow-medium hover:shadow-lg transition-shadow"
+              >
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <CardTitle className="text-2xl">
+                          {record.surveyNumber}
+                        </CardTitle>
+                        <Badge className={getStatusColor(record.status)}>
+                          {record.verified ? "Verified" : "Pending"}
+                        </Badge>
                       </div>
-                      {record.verified ? (
-                        <div className="flex items-center space-x-2 bg-primary/10 text-primary px-4 py-2 rounded-xl">
-                          <CheckCircle className="w-5 h-5" />
-                          <span className="font-medium">Verified</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center space-x-2 bg-destructive/10 text-destructive px-4 py-2 rounded-xl">
-                          <AlertCircle className="w-5 h-5" />
-                          <span className="font-medium">Pending</span>
-                        </div>
-                      )}
+                      <CardDescription className="text-base">
+                        ID: {record.id}
+                      </CardDescription>
                     </div>
-                    
-                    <div className="grid md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground mb-1">Area</p>
-                        <p className="text-foreground font-semibold text-lg">{record.area} acres</p>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Location Info */}
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-2">
+                        <MapPin className="h-5 w-5 text-primary mt-0.5" />
+                        <div>
+                          <p className="font-medium">Location</p>
+                          <p className="text-sm text-muted-foreground">
+                            {record.location}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {record.district}, {record.state} - {record.pincode}
+                          </p>
+                        </div>
                       </div>
                       <div>
-                        <p className="text-muted-foreground mb-1">Location</p>
-                        <p className="text-foreground font-semibold flex items-center">
-                          <MapPin className="w-4 h-4 mr-1 text-primary" />
-                          {record.village}, {record.district}
+                        <p className="font-medium">Area</p>
+                        <p className="text-sm text-muted-foreground">
+                          {record.area} acres
                         </p>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex flex-col sm:flex-row lg:flex-col gap-3">
-                    <Link to={`/map?id=${record.id}`} className="flex-1">
-                      <Button variant="outline" className="w-full h-11 rounded-xl">
-                        View on Map
-                      </Button>
-                    </Link>
-                    <Link to={`/verify?id=${record.id}`} className="flex-1">
-                      <Button variant="outline" className="w-full h-11 rounded-xl">
-                        View Details
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
 
-        {/* Empty State */}
-        {records.length === 0 && (
-          <Card className="rounded-2xl shadow-soft">
-            <CardContent className="p-12 text-center">
-              <MapPin className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-foreground mb-2">No land records yet</h3>
-              <p className="text-muted-foreground mb-6">Start by adding your first land record</p>
-              <Link to="/add-land">
-                <Button size="lg" className="h-12 px-6 rounded-xl">
-                  <Plus className="w-5 h-5 mr-2" />
-                  Add Your First Land
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+                    {/* Owner Info */}
+                    <div className="space-y-3">
+                      <div>
+                        <p className="font-medium">Owner</p>
+                        <p className="text-sm text-muted-foreground">
+                          {record.ownerName}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Aadhar:{" "}
+                          {record.ownerAadhar.replace(
+                            /(\d{4})(\d{4})(\d{4})/,
+                            "$1 $2 $3",
+                          )}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Phone: {record.ownerPhone}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        Registered:{" "}
+                        {new Date(record.registeredDate).toLocaleDateString(
+                          "en-IN",
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Witnesses */}
+                  <div className="mt-4 pt-4 border-t">
+                    <p className="font-medium mb-2">Witnesses</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {record.witnesses.map((witness, index) => (
+                        <div
+                          key={index}
+                          className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg"
+                        >
+                          <p className="font-medium text-foreground">
+                            Witness {index + 1}
+                          </p>
+                          <p>{witness.name}</p>
+                          <p>
+                            Aadhar:{" "}
+                            {witness.aadhar.replace(
+                              /(\d{4})(\d{4})(\d{4})/,
+                              "$1 $2 $3",
+                            )}
+                          </p>
+                          <p>Phone: {witness.phone}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="mt-4 flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate("/verify")}
+                    >
+                      View Certificate
+                    </Button>
+                    <Button variant="outline" onClick={() => navigate("/map")}>
+                      View on Map
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         )}
       </div>
     </div>
   );
-};
-
-export default Dashboard;
+}

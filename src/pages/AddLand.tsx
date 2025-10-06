@@ -1,365 +1,422 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
-import { MapPin, Upload } from "lucide-react";
-import { useLandRecords } from "@/hooks/useLandRecords";
 
-const AddLand = () => {
-  const { toast } = useToast();
+interface Witness {
+  name: string;
+  aadhar: string;
+  phone: string;
+}
+
+export default function AddLand() {
   const navigate = useNavigate();
-  const { addRecord } = useLandRecords();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCapturingGPS, setIsCapturingGPS] = useState(false);
+  const { toast } = useToast();
+
+  const [witnesses, setWitnesses] = useState<Witness[]>([
+    { name: "", aadhar: "", phone: "" },
+    { name: "", aadhar: "", phone: "" },
+  ]);
+
   const [formData, setFormData] = useState({
-    ownerName: "",
-    fatherName: "",
-    contact: "",
-    aadhar: "",
     surveyNumber: "",
     area: "",
-    village: "",
+    location: "",
+    ownerName: "",
+    ownerAadhar: "",
+    ownerPhone: "",
     district: "",
-    address: "",
-    latitude: "",
-    longitude: "",
+    state: "",
+    pincode: "",
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value } = e.target;
-    
-    // Special validation for Aadhar - only allow 12 numeric digits
-    if (id === "aadhar") {
-      const numericValue = value.replace(/\D/g, "").slice(0, 12);
-      setFormData(prev => ({ ...prev, [id]: numericValue }));
-      return;
-    }
-    
-    setFormData(prev => ({ ...prev, [id]: value }));
-  };
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
 
-  const captureGPS = () => {
-    setIsCapturingGPS(true);
-    
-    if (!navigator.geolocation) {
-      toast({
-        title: "GPS not supported",
-        description: "Your device doesn't support GPS location.",
-        variant: "destructive",
-      });
-      setIsCapturingGPS(false);
+    // Only allow numbers for Aadhar fields
+    if (name === "ownerAadhar" && value && !/^\d*$/.test(value)) {
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setFormData(prev => ({
-          ...prev,
-          latitude: position.coords.latitude.toFixed(6),
-          longitude: position.coords.longitude.toFixed(6),
-        }));
-        toast({
-          title: "GPS captured successfully",
-          description: "Location coordinates have been added.",
-        });
-        setIsCapturingGPS(false);
-      },
-      (error) => {
-        toast({
-          title: "GPS capture failed",
-          description: error.message || "Unable to get your location. Please enter manually.",
-          variant: "destructive",
-        });
-        setIsCapturingGPS(false);
-      }
-    );
+    // Only allow numbers for phone fields
+    if (name === "ownerPhone" && value && !/^\d*$/.test(value)) {
+      return;
+    }
+
+    // Only allow numbers for pincode
+    if (name === "pincode" && value && !/^\d*$/.test(value)) {
+      return;
+    }
+
+    setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleWitnessChange = (
+    index: number,
+    field: keyof Witness,
+    value: string,
+  ) => {
+    // Only allow numbers for Aadhar and phone fields
+    if (
+      (field === "aadhar" || field === "phone") &&
+      value &&
+      !/^\d*$/.test(value)
+    ) {
+      return;
+    }
+
+    const newWitnesses = [...witnesses];
+    newWitnesses[index][field] = value;
+    setWitnesses(newWitnesses);
+  };
+
+  const validateAadhar = (aadhar: string) => {
+    return /^\d{12}$/.test(aadhar);
+  };
+
+  const validatePhone = (phone: string) => {
+    return /^\d{10}$/.test(phone);
+  };
+
+  const validatePincode = (pincode: string) => {
+    return /^\d{6}$/.test(pincode);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate Aadhar if provided
-    if (formData.aadhar && formData.aadhar.length !== 12) {
+
+    // Validate owner Aadhar
+    if (!validateAadhar(formData.ownerAadhar)) {
       toast({
         title: "Invalid Aadhar",
-        description: "Aadhar number must be exactly 12 digits.",
+        description: "Owner's Aadhar must be exactly 12 digits",
         variant: "destructive",
       });
       return;
     }
-    
-    setIsSubmitting(true);
 
-    try {
-      addRecord({
-        ownerName: formData.ownerName,
-        fatherName: formData.fatherName,
-        contact: formData.contact,
-        aadhar: formData.aadhar || undefined,
-        surveyNumber: formData.surveyNumber,
-        area: formData.area,
-        village: formData.village,
-        district: formData.district,
-        address: formData.address,
-        latitude: formData.latitude || undefined,
-        longitude: formData.longitude || undefined,
-      });
-
+    // Validate owner phone
+    if (!validatePhone(formData.ownerPhone)) {
       toast({
-        title: "Land record added successfully",
-        description: "Your land details have been saved.",
-      });
-      navigate("/dashboard");
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save land record. Please try again.",
+        title: "Invalid Phone",
+        description: "Phone number must be exactly 10 digits",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
+      return;
     }
+
+    // Validate pincode
+    if (!validatePincode(formData.pincode)) {
+      toast({
+        title: "Invalid Pincode",
+        description: "Pincode must be exactly 6 digits",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate both witnesses
+    for (let i = 0; i < 2; i++) {
+      const witness = witnesses[i];
+
+      if (!witness.name.trim()) {
+        toast({
+          title: "Missing Witness Name",
+          description: `Please enter name for Witness ${i + 1}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!validateAadhar(witness.aadhar)) {
+        toast({
+          title: "Invalid Witness Aadhar",
+          description: `Witness ${i + 1} Aadhar must be exactly 12 digits`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!validatePhone(witness.phone)) {
+        toast({
+          title: "Invalid Witness Phone",
+          description: `Witness ${i + 1} phone must be exactly 10 digits`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Create land record with unique ID
+    const landRecord = {
+      id: `LAND-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+      ...formData,
+      witnesses: witnesses,
+      registeredDate: new Date().toISOString(),
+      status: "pending",
+      verified: false,
+    };
+
+    // Save to localStorage
+    const existingRecords = JSON.parse(
+      localStorage.getItem("landRecords") || "[]",
+    );
+    existingRecords.push(landRecord);
+    localStorage.setItem("landRecords", JSON.stringify(existingRecords));
+
+    toast({
+      title: "Land Registered Successfully",
+      description: `Your land has been registered with ID: ${landRecord.id}`,
+    });
+
+    // Navigate to dashboard after 2 seconds
+    setTimeout(() => navigate("/dashboard"), 2000);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="max-w-3xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-foreground mb-2">Add Land Record</h1>
-            <p className="text-lg text-muted-foreground">Enter your land details to create a digital record</p>
-          </div>
-
-          <Card className="rounded-2xl shadow-medium">
-            <CardHeader className="space-y-1 pb-8">
-              <CardTitle className="text-2xl">Land Information</CardTitle>
-              <CardDescription className="text-base">
-                Fill in the details below. Fields marked with * are required.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Owner Details */}
-                <div className="space-y-6">
-                  <h3 className="text-xl font-semibold text-foreground">Owner Details</h3>
-                  
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="ownerName" className="text-base">Owner Name *</Label>
-                      <Input
-                        id="ownerName"
-                        value={formData.ownerName}
-                        onChange={handleInputChange}
-                        placeholder="Enter full name"
-                        required
-                        className="h-12 rounded-xl"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="fatherName" className="text-base">Father's Name *</Label>
-                      <Input
-                        id="fatherName"
-                        value={formData.fatherName}
-                        onChange={handleInputChange}
-                        placeholder="Enter father's name"
-                        required
-                        className="h-12 rounded-xl"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="contact" className="text-base">Contact Number *</Label>
-                      <Input
-                        id="contact"
-                        type="tel"
-                        value={formData.contact}
-                        onChange={handleInputChange}
-                        placeholder="Enter mobile number"
-                        required
-                        className="h-12 rounded-xl"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="aadhar" className="text-base">Aadhar Number (12 digits)</Label>
-                      <Input
-                        id="aadhar"
-                        value={formData.aadhar}
-                        onChange={handleInputChange}
-                        placeholder="Enter 12 digit Aadhar"
-                        maxLength={12}
-                        className="h-12 rounded-xl"
-                      />
-                      {formData.aadhar && formData.aadhar.length !== 12 && (
-                        <p className="text-sm text-destructive">Aadhar must be exactly 12 digits</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Land Details */}
-                <div className="space-y-6">
-                  <h3 className="text-xl font-semibold text-foreground">Land Details</h3>
-                  
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="surveyNumber" className="text-base">Survey Number *</Label>
-                      <Input
-                        id="surveyNumber"
-                        value={formData.surveyNumber}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 123/4A"
-                        required
-                        className="h-12 rounded-xl"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="area" className="text-base">Land Area (acres) *</Label>
-                      <Input
-                        id="area"
-                        type="number"
-                        step="0.01"
-                        value={formData.area}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 2.5"
-                        required
-                        className="h-12 rounded-xl"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="village" className="text-base">Village *</Label>
-                      <Input
-                        id="village"
-                        value={formData.village}
-                        onChange={handleInputChange}
-                        placeholder="Enter village name"
-                        required
-                        className="h-12 rounded-xl"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="district" className="text-base">District *</Label>
-                      <Input
-                        id="district"
-                        value={formData.district}
-                        onChange={handleInputChange}
-                        placeholder="Enter district name"
-                        required
-                        className="h-12 rounded-xl"
-                      />
-                    </div>
-                  </div>
-
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-12 px-4">
+      <div className="max-w-4xl mx-auto">
+        <Card className="shadow-medium">
+          <CardHeader>
+            <CardTitle className="text-3xl font-bold flex items-center gap-2">
+              <MapPin className="h-8 w-8 text-primary" />
+              Register New Land
+            </CardTitle>
+            <CardDescription>
+              Fill in all the details to register your land on the blockchain
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Land Details Section */}
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-primary">
+                  Land Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="address" className="text-base">Full Address *</Label>
-                    <Textarea
-                      id="address"
-                      value={formData.address}
+                    <Label htmlFor="surveyNumber">Survey Number *</Label>
+                    <Input
+                      id="surveyNumber"
+                      name="surveyNumber"
+                      value={formData.surveyNumber}
                       onChange={handleInputChange}
-                      placeholder="Enter complete address including taluka and state"
+                      placeholder="e.g., 123/4A"
                       required
-                      className="min-h-24 rounded-xl"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="area">Area (in acres) *</Label>
+                    <Input
+                      id="area"
+                      name="area"
+                      type="number"
+                      step="0.01"
+                      value={formData.area}
+                      onChange={handleInputChange}
+                      placeholder="e.g., 2.5"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="location">Location *</Label>
+                    <Input
+                      id="location"
+                      name="location"
+                      value={formData.location}
+                      onChange={handleInputChange}
+                      placeholder="Full address"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="district">District *</Label>
+                    <Input
+                      id="district"
+                      name="district"
+                      value={formData.district}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="state">State *</Label>
+                    <Input
+                      id="state"
+                      name="state"
+                      value={formData.state}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pincode">Pincode *</Label>
+                    <Input
+                      id="pincode"
+                      name="pincode"
+                      value={formData.pincode}
+                      onChange={handleInputChange}
+                      placeholder="6 digits"
+                      maxLength={6}
+                      required
                     />
                   </div>
                 </div>
+              </div>
 
-                {/* GPS Coordinates */}
-                <div className="space-y-6">
-                  <h3 className="text-xl font-semibold text-foreground flex items-center">
-                    <MapPin className="w-5 h-5 mr-2 text-primary" />
-                    GPS Coordinates
+              {/* Owner Details Section */}
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-primary">
+                  Owner Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="ownerName">Full Name *</Label>
+                    <Input
+                      id="ownerName"
+                      name="ownerName"
+                      value={formData.ownerName}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ownerAadhar">Aadhar Number *</Label>
+                    <Input
+                      id="ownerAadhar"
+                      name="ownerAadhar"
+                      value={formData.ownerAadhar}
+                      onChange={handleInputChange}
+                      placeholder="12 digits (numbers only)"
+                      maxLength={12}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {formData.ownerAadhar.length}/12 digits
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ownerPhone">Phone Number *</Label>
+                    <Input
+                      id="ownerPhone"
+                      name="ownerPhone"
+                      value={formData.ownerPhone}
+                      onChange={handleInputChange}
+                      placeholder="10 digits (numbers only)"
+                      maxLength={10}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {formData.ownerPhone.length}/10 digits
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Witnesses Section - Fixed 2 Witnesses */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold text-primary">
+                    Witness Details (2 Required)
                   </h3>
-                  
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="latitude" className="text-base">Latitude</Label>
-                      <Input
-                        id="latitude"
-                        value={formData.latitude}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 19.0760"
-                        className="h-12 rounded-xl"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="longitude" className="text-base">Longitude</Label>
-                      <Input
-                        id="longitude"
-                        value={formData.longitude}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 72.8777"
-                        className="h-12 rounded-xl"
-                      />
-                    </div>
-                  </div>
-
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={captureGPS}
-                    disabled={isCapturingGPS}
-                    className="w-full md:w-auto h-12 rounded-xl"
-                  >
-                    <MapPin className="w-5 h-5 mr-2" />
-                    {isCapturingGPS ? "Capturing..." : "Capture GPS from Device"}
-                  </Button>
                 </div>
 
-                {/* Documents */}
-                <div className="space-y-6">
-                  <h3 className="text-xl font-semibold text-foreground">Documents</h3>
-                  
-                  <div className="space-y-4">
-                    <Button type="button" variant="outline" className="w-full h-16 rounded-xl justify-start text-left">
-                      <Upload className="w-5 h-5 mr-3" />
-                      <div>
-                        <p className="font-medium">Upload Land Documents</p>
-                        <p className="text-sm text-muted-foreground">PDF, JPG, PNG (Max 5MB)</p>
+                {witnesses.map((witness, index) => (
+                  <Card key={index} className="bg-muted/30">
+                    <CardContent className="pt-6">
+                      <h4 className="font-medium mb-4">Witness {index + 1}</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor={`witness-${index}-name`}>
+                            Full Name *
+                          </Label>
+                          <Input
+                            id={`witness-${index}-name`}
+                            value={witness.name}
+                            onChange={(e) =>
+                              handleWitnessChange(index, "name", e.target.value)
+                            }
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`witness-${index}-aadhar`}>
+                            Aadhar Number *
+                          </Label>
+                          <Input
+                            id={`witness-${index}-aadhar`}
+                            value={witness.aadhar}
+                            onChange={(e) =>
+                              handleWitnessChange(
+                                index,
+                                "aadhar",
+                                e.target.value,
+                              )
+                            }
+                            placeholder="12 digits (numbers only)"
+                            maxLength={12}
+                            required
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            {witness.aadhar.length}/12 digits
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor={`witness-${index}-phone`}>
+                            Phone Number *
+                          </Label>
+                          <Input
+                            id={`witness-${index}-phone`}
+                            value={witness.phone}
+                            onChange={(e) =>
+                              handleWitnessChange(
+                                index,
+                                "phone",
+                                e.target.value,
+                              )
+                            }
+                            placeholder="10 digits (numbers only)"
+                            maxLength={10}
+                            required
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            {witness.phone.length}/10 digits
+                          </p>
+                        </div>
                       </div>
-                    </Button>
-                  </div>
-                </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
 
-                {/* Submit Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 pt-6">
-                  <Button
-                    type="submit"
-                    size="lg"
-                    disabled={isSubmitting}
-                    className="flex-1 h-14 rounded-xl text-lg shadow-medium"
-                  >
-                    {isSubmitting ? "Saving..." : "Save Land Record"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="lg"
-                    onClick={() => navigate("/dashboard")}
-                    className="flex-1 h-14 rounded-xl text-lg"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
+              {/* Submit Button */}
+              <div className="flex gap-4 pt-4">
+                <Button type="submit" size="lg" className="flex-1">
+                  Register Land
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  onClick={() => navigate("/dashboard")}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
-};
-
-export default AddLand;
+}
