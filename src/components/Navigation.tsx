@@ -1,19 +1,16 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, PlusCircle, Map, CheckCircle, Menu } from "lucide-react";
+import { Home, PlusCircle, Map, CheckCircle, Menu, Zap } from "lucide-react"; // Zap icon imported
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const Navigation = () => {
   const location = useLocation();
-  
+
   const navItems = [
     { path: "/", label: "Home", icon: Home },
     { path: "/dashboard", label: "Dashboard", icon: Home },
     { path: "/add-land", label: "Add Land", icon: PlusCircle },
+    { path: "/measurement", label: "Measurement Tool", icon: Zap }, // <-- NEW MENU ITEM ADDED HERE
     { path: "/map", label: "Map View", icon: Map },
     { path: "/verify", label: "Verify", icon: CheckCircle },
   ];
@@ -26,9 +23,13 @@ const Navigation = () => {
         <div className="flex items-center justify-between h-20">
           <Link to="/" className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xl">B</span>
+              <span className="text-primary-foreground font-bold text-xl">
+                B
+              </span>
             </div>
-            <span className="text-xl font-semibold text-foreground">BhumiBandhu</span>
+            <span className="text-xl font-semibold text-foreground">
+              BhumiBandhu
+            </span>
           </Link>
 
           {/* Desktop Navigation */}

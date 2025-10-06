@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import AddLand from "./pages/AddLand";
 import MapView from "./pages/MapView";
 import Verify from "./pages/Verify";
+import MeasurementTool from "./pages/MeasurementTool"; // <-- NEW IMPORT
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,8 @@ const App = () => (
           <Route path="/add-land" element={<AddLand />} />
           <Route path="/map" element={<MapView />} />
           <Route path="/verify" element={<Verify />} />
+          <Route path="/measurement" element={<MeasurementTool />} />{" "}
+          {/* <-- NEW ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
