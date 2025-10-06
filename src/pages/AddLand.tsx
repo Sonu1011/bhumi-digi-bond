@@ -7,25 +7,122 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { MapPin, Upload } from "lucide-react";
+import { useLandRecords } from "@/hooks/useLandRecords";
 
 const AddLand = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { addRecord } = useLandRecords();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCapturingGPS, setIsCapturingGPS] = useState(false);
+  const [formData, setFormData] = useState({
+    ownerName: "",
+    fatherName: "",
+    contact: "",
+    aadhar: "",
+    surveyNumber: "",
+    area: "",
+    village: "",
+    district: "",
+    address: "",
+    latitude: "",
+    longitude: "",
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    
+    // Special validation for Aadhar - only allow 12 numeric digits
+    if (id === "aadhar") {
+      const numericValue = value.replace(/\D/g, "").slice(0, 12);
+      setFormData(prev => ({ ...prev, [id]: numericValue }));
+      return;
+    }
+    
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const captureGPS = () => {
+    setIsCapturingGPS(true);
+    
+    if (!navigator.geolocation) {
+      toast({
+        title: "GPS not supported",
+        description: "Your device doesn't support GPS location.",
+        variant: "destructive",
+      });
+      setIsCapturingGPS(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData(prev => ({
+          ...prev,
+          latitude: position.coords.latitude.toFixed(6),
+          longitude: position.coords.longitude.toFixed(6),
+        }));
+        toast({
+          title: "GPS captured successfully",
+          description: "Location coordinates have been added.",
+        });
+        setIsCapturingGPS(false);
+      },
+      (error) => {
+        toast({
+          title: "GPS capture failed",
+          description: error.message || "Unable to get your location. Please enter manually.",
+          variant: "destructive",
+        });
+        setIsCapturingGPS(false);
+      }
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate Aadhar if provided
+    if (formData.aadhar && formData.aadhar.length !== 12) {
+      toast({
+        title: "Invalid Aadhar",
+        description: "Aadhar number must be exactly 12 digits.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      addRecord({
+        ownerName: formData.ownerName,
+        fatherName: formData.fatherName,
+        contact: formData.contact,
+        aadhar: formData.aadhar || undefined,
+        surveyNumber: formData.surveyNumber,
+        area: formData.area,
+        village: formData.village,
+        district: formData.district,
+        address: formData.address,
+        latitude: formData.latitude || undefined,
+        longitude: formData.longitude || undefined,
+      });
+
       toast({
         title: "Land record added successfully",
-        description: "Your land details have been saved and will be verified soon.",
+        description: "Your land details have been saved.",
       });
-      setIsSubmitting(false);
       navigate("/dashboard");
-    }, 1500);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save land record. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -55,6 +152,8 @@ const AddLand = () => {
                       <Label htmlFor="ownerName" className="text-base">Owner Name *</Label>
                       <Input
                         id="ownerName"
+                        value={formData.ownerName}
+                        onChange={handleInputChange}
                         placeholder="Enter full name"
                         required
                         className="h-12 rounded-xl"
@@ -65,6 +164,8 @@ const AddLand = () => {
                       <Label htmlFor="fatherName" className="text-base">Father's Name *</Label>
                       <Input
                         id="fatherName"
+                        value={formData.fatherName}
+                        onChange={handleInputChange}
                         placeholder="Enter father's name"
                         required
                         className="h-12 rounded-xl"
@@ -78,6 +179,8 @@ const AddLand = () => {
                       <Input
                         id="contact"
                         type="tel"
+                        value={formData.contact}
+                        onChange={handleInputChange}
                         placeholder="Enter mobile number"
                         required
                         className="h-12 rounded-xl"
@@ -85,12 +188,18 @@ const AddLand = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="aadhar" className="text-base">Aadhar Number</Label>
+                      <Label htmlFor="aadhar" className="text-base">Aadhar Number (12 digits)</Label>
                       <Input
                         id="aadhar"
-                        placeholder="XXXX XXXX XXXX"
+                        value={formData.aadhar}
+                        onChange={handleInputChange}
+                        placeholder="Enter 12 digit Aadhar"
+                        maxLength={12}
                         className="h-12 rounded-xl"
                       />
+                      {formData.aadhar && formData.aadhar.length !== 12 && (
+                        <p className="text-sm text-destructive">Aadhar must be exactly 12 digits</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -104,6 +213,8 @@ const AddLand = () => {
                       <Label htmlFor="surveyNumber" className="text-base">Survey Number *</Label>
                       <Input
                         id="surveyNumber"
+                        value={formData.surveyNumber}
+                        onChange={handleInputChange}
                         placeholder="e.g., 123/4A"
                         required
                         className="h-12 rounded-xl"
@@ -116,6 +227,8 @@ const AddLand = () => {
                         id="area"
                         type="number"
                         step="0.01"
+                        value={formData.area}
+                        onChange={handleInputChange}
                         placeholder="e.g., 2.5"
                         required
                         className="h-12 rounded-xl"
@@ -128,6 +241,8 @@ const AddLand = () => {
                       <Label htmlFor="village" className="text-base">Village *</Label>
                       <Input
                         id="village"
+                        value={formData.village}
+                        onChange={handleInputChange}
                         placeholder="Enter village name"
                         required
                         className="h-12 rounded-xl"
@@ -138,6 +253,8 @@ const AddLand = () => {
                       <Label htmlFor="district" className="text-base">District *</Label>
                       <Input
                         id="district"
+                        value={formData.district}
+                        onChange={handleInputChange}
                         placeholder="Enter district name"
                         required
                         className="h-12 rounded-xl"
@@ -149,6 +266,8 @@ const AddLand = () => {
                     <Label htmlFor="address" className="text-base">Full Address *</Label>
                     <Textarea
                       id="address"
+                      value={formData.address}
+                      onChange={handleInputChange}
                       placeholder="Enter complete address including taluka and state"
                       required
                       className="min-h-24 rounded-xl"
@@ -168,6 +287,8 @@ const AddLand = () => {
                       <Label htmlFor="latitude" className="text-base">Latitude</Label>
                       <Input
                         id="latitude"
+                        value={formData.latitude}
+                        onChange={handleInputChange}
                         placeholder="e.g., 19.0760"
                         className="h-12 rounded-xl"
                       />
@@ -177,15 +298,23 @@ const AddLand = () => {
                       <Label htmlFor="longitude" className="text-base">Longitude</Label>
                       <Input
                         id="longitude"
+                        value={formData.longitude}
+                        onChange={handleInputChange}
                         placeholder="e.g., 72.8777"
                         className="h-12 rounded-xl"
                       />
                     </div>
                   </div>
 
-                  <Button type="button" variant="outline" className="w-full md:w-auto h-12 rounded-xl">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={captureGPS}
+                    disabled={isCapturingGPS}
+                    className="w-full md:w-auto h-12 rounded-xl"
+                  >
                     <MapPin className="w-5 h-5 mr-2" />
-                    Capture GPS from Device
+                    {isCapturingGPS ? "Capturing..." : "Capture GPS from Device"}
                   </Button>
                 </div>
 

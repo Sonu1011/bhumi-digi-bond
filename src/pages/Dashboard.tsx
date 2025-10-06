@@ -2,27 +2,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MapPin, Plus, CheckCircle, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useLandRecords } from "@/hooks/useLandRecords";
 
 const Dashboard = () => {
-  // Mock data - will be replaced with real data later
-  const landRecords = [
-    {
-      id: 1,
-      ownerName: "Ramesh Kumar",
-      area: "2.5 acres",
-      location: "Village Kandivali, District Thane",
-      verified: true,
-      surveyNumber: "123/4A",
-    },
-    {
-      id: 2,
-      ownerName: "Sunita Devi",
-      area: "1.8 acres",
-      location: "Village Mandvi, District Raigad",
-      verified: false,
-      surveyNumber: "456/2B",
-    },
-  ];
+  const { records } = useLandRecords();
+  
+  const totalRecords = records.length;
+  const verifiedRecords = records.filter(r => r.verified).length;
+  const totalArea = records.reduce((sum, r) => sum + parseFloat(r.area || "0"), 0).toFixed(1);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted">
@@ -48,7 +35,7 @@ const Dashboard = () => {
               <CardTitle className="text-muted-foreground text-sm font-medium">Total Land Records</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-4xl font-bold text-foreground">2</p>
+              <p className="text-4xl font-bold text-foreground">{totalRecords}</p>
             </CardContent>
           </Card>
           
@@ -57,7 +44,7 @@ const Dashboard = () => {
               <CardTitle className="text-muted-foreground text-sm font-medium">Verified Records</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-4xl font-bold text-primary">1</p>
+              <p className="text-4xl font-bold text-primary">{verifiedRecords}</p>
             </CardContent>
           </Card>
           
@@ -66,7 +53,7 @@ const Dashboard = () => {
               <CardTitle className="text-muted-foreground text-sm font-medium">Total Area</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-4xl font-bold text-secondary">4.3 acres</p>
+              <p className="text-4xl font-bold text-secondary">{totalArea} acres</p>
             </CardContent>
           </Card>
         </div>
@@ -75,7 +62,7 @@ const Dashboard = () => {
         <div className="space-y-6">
           <h2 className="text-2xl font-semibold text-foreground">Your Land Records</h2>
           
-          {landRecords.map((record) => (
+          {records.map((record) => (
             <Card key={record.id} className="rounded-2xl shadow-soft hover:shadow-medium transition-all">
               <CardContent className="p-8">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
@@ -101,13 +88,13 @@ const Dashboard = () => {
                     <div className="grid md:grid-cols-2 gap-4 text-sm">
                       <div>
                         <p className="text-muted-foreground mb-1">Area</p>
-                        <p className="text-foreground font-semibold text-lg">{record.area}</p>
+                        <p className="text-foreground font-semibold text-lg">{record.area} acres</p>
                       </div>
                       <div>
                         <p className="text-muted-foreground mb-1">Location</p>
                         <p className="text-foreground font-semibold flex items-center">
                           <MapPin className="w-4 h-4 mr-1 text-primary" />
-                          {record.location}
+                          {record.village}, {record.district}
                         </p>
                       </div>
                     </div>
@@ -132,7 +119,7 @@ const Dashboard = () => {
         </div>
 
         {/* Empty State */}
-        {landRecords.length === 0 && (
+        {records.length === 0 && (
           <Card className="rounded-2xl shadow-soft">
             <CardContent className="p-12 text-center">
               <MapPin className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
