@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, PlusCircle, Map, CheckCircle, Menu, Zap } from "lucide-react"; // Zap icon imported
+import { Home, PlusCircle, Map, CheckCircle, Menu, Zap, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -10,7 +10,8 @@ const Navigation = () => {
     { path: "/", label: "Home", icon: Home },
     { path: "/dashboard", label: "Dashboard", icon: Home },
     { path: "/add-land", label: "Add Land", icon: PlusCircle },
-    { path: "/measurement", label: "Measurement Tool", icon: Zap }, // <-- NEW MENU ITEM ADDED HERE
+    { path: "/history", label: "History & Disputes", icon: History },
+    { path: "/measurement", label: "Measurement Tool", icon: Zap },
     { path: "/map", label: "Map View", icon: Map },
     { path: "/verify", label: "Verify", icon: CheckCircle },
   ];

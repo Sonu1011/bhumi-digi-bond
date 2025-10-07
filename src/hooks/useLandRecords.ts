@@ -1,7 +1,30 @@
 import { useState, useEffect } from 'react';
 
+export interface DisputeRecord {
+  year: number;
+  type: string;
+  status: 'Pending' | 'Resolved' | 'No Dispute';
+  description: string;
+  filedDate?: string;
+  resolutionDate?: string;
+}
+
+export interface OwnershipHistory {
+  owner: string;
+  from: number;
+  to: number | 'Present';
+  documentRef?: string;
+}
+
+export interface Document {
+  name: string;
+  link: string;
+  uploadDate?: string;
+}
+
 export interface LandRecord {
   id: string;
+  landId: string; // ULPIN format
   ownerName: string;
   fatherName: string;
   contact: string;
@@ -11,10 +34,15 @@ export interface LandRecord {
   village: string;
   district: string;
   address: string;
+  state: string;
+  pincode: string;
   latitude?: string;
   longitude?: string;
   verified: boolean;
   createdAt: string;
+  ownershipHistory?: OwnershipHistory[];
+  disputes?: DisputeRecord[];
+  documents?: Document[];
 }
 
 const STORAGE_KEY = 'bhumibandhu_land_records';

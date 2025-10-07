@@ -10,53 +10,16 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Plus, Calendar, AlertCircle } from "lucide-react";
-
-interface LandRecord {
-  id: string;
-  surveyNumber: string;
-  area: string;
-  location: string;
-  ownerName: string;
-  ownerAadhar: string;
-  ownerPhone: string;
-  district: string;
-  state: string;
-  pincode: string;
-  witnesses: Array<{
-    name: string;
-    aadhar: string;
-    phone: string;
-  }>;
-  registeredDate: string;
-  status: string;
-  verified: boolean;
-}
+import { useLandRecords } from "@/hooks/useLandRecords";
+import { seedGandhiNagarData } from "@/data/gandhiNagarData";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [landRecords, setLandRecords] = useState<LandRecord[]>([]);
+  const { records } = useLandRecords();
 
-  // Load land records from localStorage on component mount
+  // Seed Gandhinagar data on first load
   useEffect(() => {
-    loadLandRecords();
-  }, []);
-
-  const loadLandRecords = () => {
-    const records = localStorage.getItem("landRecords");
-    if (records) {
-      const parsedRecords = JSON.parse(records);
-      setLandRecords(parsedRecords);
-    }
-  };
-
-  // Refresh data every time the component becomes visible
-  useEffect(() => {
-    const handleFocus = () => {
-      loadLandRecords();
-    };
-
-    window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
+    seedGandhiNagarData();
   }, []);
 
   const getStatusColor = (status: string) => {
@@ -100,14 +63,14 @@ export default function Dashboard() {
           <Card>
             <CardHeader className="pb-3">
               <CardDescription>Total Properties</CardDescription>
-              <CardTitle className="text-3xl">{landRecords.length}</CardTitle>
+              <CardTitle className="text-3xl">{records.length}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-3">
               <CardDescription>Verified</CardDescription>
               <CardTitle className="text-3xl text-green-600">
-                {landRecords.filter((r) => r.verified).length}
+                {records.filter((r) => r.verified).length}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -115,14 +78,14 @@ export default function Dashboard() {
             <CardHeader className="pb-3">
               <CardDescription>Pending</CardDescription>
               <CardTitle className="text-3xl text-yellow-600">
-                {landRecords.filter((r) => !r.verified).length}
+                {records.filter((r) => !r.verified).length}
               </CardTitle>
             </CardHeader>
           </Card>
         </div>
 
         {/* Land Records List */}
-        {landRecords.length === 0 ? (
+        {records.length === 0 ? (
           <Card className="text-center py-12">
             <CardContent>
               <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
@@ -145,7 +108,7 @@ export default function Dashboard() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 gap-6">
-            {landRecords.map((record) => (
+            {records.map((record) => (
               <Card
                 key={record.id}
                 className="shadow-medium hover:shadow-lg transition-shadow"
@@ -154,16 +117,20 @@ export default function Dashboard() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <CardTitle className="text-2xl">
-                          {record.surveyNumber}
-                        </CardTitle>
-                        <Badge className={getStatusColor(record.status)}>
-                          {record.verified ? "Verified" : "Pending"}
-                        </Badge>
+                      <CardTitle className="text-2xl">
+                        {record.surveyNumber}
+                      </CardTitle>
+                      <Badge className={record.verified ? "bg-green-500" : "bg-yellow-500"}>
+                        {record.verified ? "Verified" : "Pending"}
+                      </Badge>
+                    </div>
+                    <CardDescription className="text-base space-y-1">
+                      <div>
+                        <span className="font-semibold">Land ID:</span>{" "}
+                        <span className="font-mono">{record.landId}</span>
                       </div>
-                      <CardDescription className="text-base">
-                        ID: {record.id}
-                      </CardDescription>
+                      <div className="text-xs">Internal ID: {record.id}</div>
+                    </CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -176,7 +143,10 @@ export default function Dashboard() {
                         <div>
                           <p className="font-medium">Location</p>
                           <p className="text-sm text-muted-foreground">
-                            {record.location}
+                            {record.address}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {record.village}
                           </p>
                           <p className="text-sm text-muted-foreground">
                             {record.district}, {record.state} - {record.pincode}
@@ -199,51 +169,40 @@ export default function Dashboard() {
                           {record.ownerName}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          Aadhar:{" "}
-                          {record.ownerAadhar.replace(
-                            /(\d{4})(\d{4})(\d{4})/,
-                            "$1 $2 $3",
-                          )}
+                          Father: {record.fatherName}
                         </p>
+                        {record.aadhar && (
+                          <p className="text-sm text-muted-foreground">
+                            Aadhar:{" "}
+                            {record.aadhar.replace(
+                              /(\d{4})(\d{4})(\d{4})/,
+                              "$1 $2 $3",
+                            )}
+                          </p>
+                        )}
                         <p className="text-sm text-muted-foreground">
-                          Phone: {record.ownerPhone}
+                          Phone: {record.contact}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Calendar className="h-4 w-4" />
                         Registered:{" "}
-                        {new Date(record.registeredDate).toLocaleDateString(
+                        {new Date(record.createdAt).toLocaleDateString(
                           "en-IN",
                         )}
                       </div>
                     </div>
                   </div>
 
-                  {/* Witnesses */}
-                  <div className="mt-4 pt-4 border-t">
-                    <p className="font-medium mb-2">Witnesses</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {record.witnesses.map((witness, index) => (
-                        <div
-                          key={index}
-                          className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg"
-                        >
-                          <p className="font-medium text-foreground">
-                            Witness {index + 1}
-                          </p>
-                          <p>{witness.name}</p>
-                          <p>
-                            Aadhar:{" "}
-                            {witness.aadhar.replace(
-                              /(\d{4})(\d{4})(\d{4})/,
-                              "$1 $2 $3",
-                            )}
-                          </p>
-                          <p>Phone: {witness.phone}</p>
-                        </div>
-                      ))}
+                  {/* Additional Info */}
+                  {(record.disputes && record.disputes.length > 0) && (
+                    <div className="mt-4 pt-4 border-t">
+                      <p className="font-medium mb-2 text-red-600">Disputes</p>
+                      <p className="text-sm text-muted-foreground">
+                        {record.disputes.length} dispute(s) recorded
+                      </p>
                     </div>
-                  </div>
+                  )}
 
                   {/* Actions */}
                   <div className="mt-4 flex gap-2">

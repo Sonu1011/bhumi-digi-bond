@@ -33,12 +33,22 @@ export default function AddLand() {
     area: "",
     location: "",
     ownerName: "",
+    fatherName: "",
     ownerAadhar: "",
     ownerPhone: "",
     district: "",
     state: "",
+    village: "",
     pincode: "",
   });
+
+  // Generate ULPIN-like Land ID
+  const generateLandId = () => {
+    const stateCode = "GJ23"; // Gujarat 2023
+    const timestamp = Date.now().toString().slice(-6);
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `${stateCode}${timestamp}${random}`;
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -157,26 +167,39 @@ export default function AddLand() {
       }
     }
 
-    // Create land record with unique ID
+    // Create land record with unique ID and Land ID
+    const generatedLandId = generateLandId();
     const landRecord = {
       id: `LAND-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-      ...formData,
-      witnesses: witnesses,
-      registeredDate: new Date().toISOString(),
-      status: "pending",
+      landId: generatedLandId,
+      ownerName: formData.ownerName,
+      fatherName: formData.fatherName,
+      contact: formData.ownerPhone,
+      aadhar: formData.ownerAadhar,
+      surveyNumber: formData.surveyNumber,
+      area: formData.area,
+      village: formData.village,
+      district: formData.district,
+      address: formData.location,
+      state: formData.state,
+      pincode: formData.pincode,
       verified: false,
+      createdAt: new Date().toISOString(),
+      ownershipHistory: [],
+      disputes: [],
+      documents: [],
     };
 
-    // Save to localStorage
+    // Save to localStorage using the correct key
     const existingRecords = JSON.parse(
-      localStorage.getItem("landRecords") || "[]",
+      localStorage.getItem("bhumibandhu_land_records") || "[]",
     );
     existingRecords.push(landRecord);
-    localStorage.setItem("landRecords", JSON.stringify(existingRecords));
+    localStorage.setItem("bhumibandhu_land_records", JSON.stringify(existingRecords));
 
     toast({
       title: "Land Registered Successfully",
-      description: `Your land has been registered with ID: ${landRecord.id}`,
+      description: `Your land has been registered with Land ID: ${generatedLandId}`,
     });
 
     // Navigate to dashboard after 2 seconds
@@ -240,6 +263,17 @@ export default function AddLand() {
                     />
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="village">Village/Sector *</Label>
+                    <Input
+                      id="village"
+                      name="village"
+                      value={formData.village}
+                      onChange={handleInputChange}
+                      placeholder="e.g., Sector 5, Gandhinagar"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="district">District *</Label>
                     <Input
                       id="district"
@@ -286,6 +320,16 @@ export default function AddLand() {
                       id="ownerName"
                       name="ownerName"
                       value={formData.ownerName}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fatherName">Father's Name *</Label>
+                    <Input
+                      id="fatherName"
+                      name="fatherName"
+                      value={formData.fatherName}
                       onChange={handleInputChange}
                       required
                     />

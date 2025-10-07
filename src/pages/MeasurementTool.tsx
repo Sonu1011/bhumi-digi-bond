@@ -2,13 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Zap, Bluetooth, Wifi, MapPin, Tablet, Satellite, XCircle, CheckCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast"; // Assuming this is now working after the Verify.tsx fix
-
-// Placeholder for an internal toast implementation if the external one is still failing
-const useToast = () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return { toast: (options: any) => console.log("Toast Called:", options) };
-};
+import { useToast } from "@/hooks/use-toast";
 
 // Define all the regional land measurement units
 const regionalUnits = {
